@@ -13,6 +13,9 @@
          Software implementation will be used if config_hardware_auto_brightness_available is not set -->
     <bool name="config_automatic_brightness_available">true</bool>
 
+    <!-- Whether to cleanup fingerprints upon connection to the daemon and when user switches -->
+    <bool name="config_cleanupUnusedFingerprints">false</bool>
+
     <!-- Fast brightness animation ramp rate in brightness units per second-->
     <integer name="config_brightness_ramp_rate_fast">200</integer>
 
