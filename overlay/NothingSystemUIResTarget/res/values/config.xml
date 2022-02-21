@@ -21,4 +21,7 @@
 
     <!-- Name of the UDFPS HBM DimLayer for the HWComposer -->
     <string name="config_udfpsHbmDimLayer" translatable="false">NTFingerprintDimLayer</string>
+
+    <!-- Allow devices override audio panel location to the left side -->
+    <bool name="config_audioPanelOnLeftSide">true</bool>
 </resources>
