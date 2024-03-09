@@ -12,6 +12,9 @@ $(call inherit-product, vendor/miku/build/product/miku_product.mk)
 # include private signing keys
 -include vendor/niigo-priv/keys/keys.mk
 
+# Maintainer
+MIKU_MASTER := fukiame
+
 PRODUCT_BRAND := Nothing
 PRODUCT_DEVICE := Pacman
 PRODUCT_MANUFACTURER := Nothing
