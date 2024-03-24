@@ -259,6 +259,7 @@ PRODUCT_PACKAGES += \
     NothingFrameworksResTarget \
     NothingLauncher3ResTarget \
     NothingNfcResTarget \
+    NothingPowerOffAlarmResTarget \
     NothingSettingsResTarget \
     NothingSystemUIResTarget
 
