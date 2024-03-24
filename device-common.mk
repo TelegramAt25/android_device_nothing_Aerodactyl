@@ -228,6 +228,7 @@ PRODUCT_PACKAGES += \
     NothingFrameworksResTarget \
     NothingNetworkStackResTarget \
     NothingNfcResTarget \
+    NothingPowerOffAlarmResTarget \
     NothingSettingsResTarget \
     NothingSystemUIResTarget \
     NothingTelephonyResTarget \
