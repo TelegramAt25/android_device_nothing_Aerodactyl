@@ -9,6 +9,9 @@ $(call inherit-product, device/nothing/Aerodactyl/device-Pacman.mk)
 # Inherit some common Miku UI stuff.
 $(call inherit-product, vendor/miku/build/product/miku_product.mk)
 
+# include private signing keys
+-include vendor/niigo-priv/keys/keys.mk
+
 PRODUCT_BRAND := Nothing
 PRODUCT_DEVICE := Pacman
 PRODUCT_MANUFACTURER := Nothing
