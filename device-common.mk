@@ -215,6 +215,13 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/media/media_codecs_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_c2.xml \
     $(LOCAL_PATH)/configs/media/media_codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml
 
+# Miku UI (not really) - optional apps
+# these shouldve been in source but eh
+ifeq ($(TARGET_SHIP_FOSSBROWSER),true)
+PRODUCT_PACKAGES += \
+    FOSSBrowser
+endif
+
 # Net
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.software.ipsec_tunnel_migration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.ipsec_tunnel_migration.xml \
