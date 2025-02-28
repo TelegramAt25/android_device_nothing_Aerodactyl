@@ -15,6 +15,9 @@ $(call inherit-product, vendor/miku/build/product/miku_product.mk)
 # Maintainer
 MIKU_MASTER := fukiame
 
+# local patch - ship some apps not in source
+TARGET_SHIP_FOSSBROWSER := true
+
 PRODUCT_BRAND := Nothing
 PRODUCT_DEVICE := PacmanPro
 PRODUCT_MANUFACTURER := Nothing
