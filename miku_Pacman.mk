@@ -33,6 +33,7 @@ PRODUCT_GMS_CLIENTID_BASE := android-nothing
 PRODUCT_BUILD_PROP_OVERRIDES += \
     BuildDesc="sys_mssi_64_ww_armv82-user 16 BP2A.250605.031.A3 2602251817 release-keys" \
     BuildFingerprint=Nothing/Pacman/Pacman:16/BP2A.250605.031.A3/2602251817:user/release-keys \
+    BuildFlavor=sys_mssi_64_ww_armv82-user \
     DeviceName=Pacman \
     DeviceProduct=Pacman \
     SystemDevice=Pacman \
