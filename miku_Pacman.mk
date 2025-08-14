@@ -17,6 +17,7 @@ MIKU_MASTER := fukiame
 
 # local patch - ship some apps not in source
 TARGET_SHIP_FOSSBROWSER := true
+TARGET_SHIP_GLIMPSE := true
 
 PRODUCT_BRAND := Nothing
 PRODUCT_DEVICE := Pacman
