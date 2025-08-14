@@ -17,6 +17,10 @@ LOCAL_OVERRIDES_PACKAGES += \
     AudioFX \
     MusicFX
 endif
+ifneq ($(MIKU_GAPPS),true)
+LOCAL_OVERRIDES_PACKAGES += \
+    Calendar
+endif
 LOCAL_UNINSTALLABLE_MODULE := true
 LOCAL_CERTIFICATE := PRESIGNED
 LOCAL_SRC_FILES := /dev/null
