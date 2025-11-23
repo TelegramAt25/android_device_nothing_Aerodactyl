@@ -1,3 +1,6 @@
+# Market name
+ro.product.marketname=Nothing Phone (2a)
+
 # RKP
 remote_provisioning.tee.rkp_only=0
 remote_provisioning.strongbox.rkp_only=0
