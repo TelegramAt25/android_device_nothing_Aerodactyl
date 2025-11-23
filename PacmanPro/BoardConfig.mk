@@ -14,6 +14,7 @@ BOARD_PREBUILT_DTBOIMAGE := $(KERNEL_PATH)/dtbo-PacmanPro.img
 
 # Properties
 TARGET_ODM_PROP += $(DEVICE_PATH)/PacmanPro/odm.prop
+TARGET_PRODUCT_PROP += $(DEVICE_PATH)/PacmanPro/product.prop
 TARGET_SYSTEM_EXT_PROP += $(DEVICE_PATH)/PacmanPro/system_ext.prop
 TARGET_VENDOR_PROP += $(DEVICE_PATH)/PacmanPro/vendor.prop
 
