@@ -1,0 +1,53 @@
+From 2eded1824832a723ada51e6c60ed2c158db9e14c Mon Sep 17 00:00:00 2001
+From: bengris32 <bengris32@protonmail.ch>
+Date: Sat, 9 Mar 2024 23:15:05 +0000
+Subject: [PATCH] Aperture: Enable MediaTek HFPS Mode for 60 FPS video
+ recording
+
+MediaTek devices need to pass this parameter in order to actually record 60 FPS videos.
+
+Tested on Xiaomi 12T, POCO X4 GT and OnePlus Nord 3 5G.
+
+Change-Id: I1e027dcacc48f139c067e4e3ae1d5750d29e65a5
+Signed-off-by: fukiame <fukiame@proton.me>
+---
+ .../aperture/ext/CaptureRequestOptionsBuilder.kt | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/app/src/main/java/org/lineageos/aperture/ext/CaptureRequestOptionsBuilder.kt b/app/src/main/java/org/lineageos/aperture/ext/CaptureRequestOptionsBuilder.kt
+index 52658bd..7223930 100644
+--- a/app/src/main/java/org/lineageos/aperture/ext/CaptureRequestOptionsBuilder.kt
++++ b/app/src/main/java/org/lineageos/aperture/ext/CaptureRequestOptionsBuilder.kt
+@@ -18,6 +18,10 @@ import org.lineageos.aperture.models.NoiseReductionMode
+ import org.lineageos.aperture.models.ShadingMode
+ import org.lineageos.aperture.models.VideoStabilizationMode
+ 
++private val FPS60_MTK_KEY_SESSION_PARAMETER = CaptureRequest.Key<Int>(
++    "com.mediatek.streamingfeature.hfpsMode", Int::class.java
++)
++
+ @androidx.camera.camera2.interop.ExperimentalCamera2Interop
+ fun <ValueT> CaptureRequestOptions.Builder.setOrClearCaptureRequestOption(
+     key: CaptureRequest.Key<ValueT>,
+@@ -29,7 +33,17 @@ fun <ValueT> CaptureRequestOptions.Builder.setOrClearCaptureRequestOption(
+ @androidx.camera.camera2.interop.ExperimentalCamera2Interop
+ fun CaptureRequestOptions.Builder.setFrameRate(
+     frameRate: FrameRate?
+-) = setOrClearCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, frameRate?.range)
++) = apply {
++    setOrClearCaptureRequestOption(
++    CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
++    frameRate?.range,
++)
++
++    // Enable MediaTek HFPS mode if needed
++    if (frameRate == FrameRate.FPS_60) {
++        setOrClearCaptureRequestOption(FPS60_MTK_KEY_SESSION_PARAMETER, 1)
++    }
++}
+ 
+ @androidx.camera.camera2.interop.ExperimentalCamera2Interop
+ fun CaptureRequestOptions.Builder.setVideoStabilizationMode(
+-- 
+2.34.1
+
