@@ -271,14 +271,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     NcmTetheringOverlay
 
-PRODUCT_PACKAGES += \
-    LineageApertureResTarget \
-    LineageDozeResTarget \
-    LineageSDKResTarget \
-    LineageSettingsProviderResTarget \
-    LineageSettingsResTarget \
-    LineageSystemUIResTarget
-
 # Page size
 PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true
 
