@@ -1,0 +1,32 @@
+From e849799e756a8ed1ad6f626b5407339268802dda Mon Sep 17 00:00:00 2001
+From: Mashopy <eliasgheeraert@gmail.com>
+Date: Sat, 8 Nov 2025 18:09:28 +0100
+Subject: [PATCH 2/2] wpa_supplicant: Enable WAPI support when building for
+ mediaTek wlan chips
+
+* MediaTek provides libwapi.so on all of their devices, this is also better than forking
+  the entire config just to enable WAPI support.
+
+Change-Id: Ieb4538480cd86b5626c2f01cbefb02391c9c24aa
+---
+ wpa_supplicant/Android.mk | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/wpa_supplicant/Android.mk b/wpa_supplicant/Android.mk
+index 75a0ba2..cbc1ded 100644
+--- a/wpa_supplicant/Android.mk
++++ b/wpa_supplicant/Android.mk
+@@ -24,6 +24,10 @@ else
+   include $(LOCAL_PATH)/android.config
+ endif
+ 
++ifeq ($(BOARD_WLAN_DEVICE), MediaTek)
++  CONFIG_WAPI_INTERFACE=y
++endif
++
+ # To ignore possible wrong network configurations
+ L_CFLAGS = -DWPA_IGNORE_CONFIG_ERRORS
+ 
+-- 
+2.34.1
+

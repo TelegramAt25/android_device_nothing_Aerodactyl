@@ -1,0 +1,1142 @@
+From 2dde61012493974309ad8256447d69796eae9d91 Mon Sep 17 00:00:00 2001
+From: Mashopy <eliasgheeraert@gmail.com>
+Date: Sat, 8 Nov 2025 18:15:09 +0100
+Subject: [PATCH 1/2] wpa_supplicant: Import MediaTek wlan chips OUI and WAPI
+ changes
+
+ * These changes are required to fully use the mediaTek wlan chips on AOSP
+
+Change-Id: I999608d35bfbbf6bf284b16f84d51ff781130e17
+---
+ hostapd/Android.bp                         |   6 +
+ src/common/mtk_vendor.h                    | 466 +++++++++++++++++++++
+ src/common/wpa_common.c                    |  10 +
+ src/crypto/tls_openssl.c                   |   5 +
+ src/drivers/driver_nl80211.c               |   4 +
+ src/drivers/driver_nl80211_capa.c          |   8 +
+ src/drivers/driver_nl80211_event.c         |  83 ++++
+ src/drivers/driver_nl80211_scan.c          |   4 +
+ src/p2p/p2p_invitation.c                   |   4 +
+ src/rsn_supp/pmksa_cache.c                 |   4 +
+ wpa_supplicant/Android.bp                  |   6 +
+ wpa_supplicant/Android.mk                  |   3 +
+ wpa_supplicant/aidl/vendor/sta_network.cpp |   6 +
+ wpa_supplicant/config.c                    |  13 +
+ wpa_supplicant/config_ssid.h               |   7 +
+ wpa_supplicant/events.c                    |  32 ++
+ wpa_supplicant/sme.c                       |  18 +
+ wpa_supplicant/wpa_supplicant.c            |  55 ++-
+ 18 files changed, 733 insertions(+), 1 deletion(-)
+ create mode 100644 src/common/mtk_vendor.h
+
+diff --git a/hostapd/Android.bp b/hostapd/Android.bp
+index 533a917..c630141 100644
+--- a/hostapd/Android.bp
++++ b/hostapd/Android.bp
+@@ -418,6 +418,12 @@ cc_defaults {
+         "bcmdhd": ["-DCONFIG_DRIVER_NL80211_BRCM"],
+         "synadhd": ["-DCONFIG_DRIVER_NL80211_SYNA"],
+         default: ["-DCONFIG_DRIVER_NL80211_QCA"],
++    }) + select(soong_config_variable("wpa_supplicant_8", "board_wlan_mediatek_stability"), {
++        "true": [
++            "-DCONFIG_MTK_COMMON",
++            "-DCONFIG_MTK_HOSTAPD_COMMON",
++        ],
++        default: [],
+     }),
+ }
+ 
+diff --git a/src/common/mtk_vendor.h b/src/common/mtk_vendor.h
+new file mode 100644
+index 0000000..1808e90
+--- /dev/null
++++ b/src/common/mtk_vendor.h
+@@ -0,0 +1,466 @@
++/*
++ * Driver interaction with Linux nl80211/cfg80211
++ * Copyright (c) 2002-2010, Jouni Malinen <j@w1.fi>
++ * Copyright (c) 2003-2004, Instant802 Networks, Inc.
++ * Copyright (c) 2005-2006, Devicescape Software, Inc.
++ * Copyright (c) 2007, Johannes Berg <johannes@sipsolutions.net>
++ * Copyright (c) 2009-2010, Atheros Communications
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Alternatively, this software may be distributed under the terms of BSD
++ * license.
++ *
++ * See README and COPYING for more details.
++ */
++
++#ifndef MTK_VENDOR_H_
++#define MTK_VENDOR_H_
++
++#include <linux/wireless.h>
++
++#ifndef BITS
++/* Eddie */
++/* bits range: for example BITS(16,23) = 0xFF0000
++ *   ==>  (BIT(m)-1)   = 0x0000FFFF     ~(BIT(m)-1)   => 0xFFFF0000
++ *   ==>  (BIT(n+1)-1) = 0x00FFFFFF
++ */
++#define BITS(m,n)                       (~(BIT(m)-1) & ((BIT(n) - 1) | BIT(n)))
++#endif /* BIT */
++
++#define OUI_MTK 0x000CE7
++
++enum nl80211_testmode_sta_link_statistics_attr{
++    __NL80211_TESTMODE_STA_STATISTICS_INVALID = 0,
++    NL80211_TESTMODE_STA_STATISTICS_VERSION,
++    NL80211_TESTMODE_STA_STATISTICS_MAC,
++    NL80211_TESTMODE_STA_STATISTICS_LINK_SCORE,
++    NL80211_TESTMODE_STA_STATISTICS_FLAG,
++
++    NL80211_TESTMODE_STA_STATISTICS_PER,
++    NL80211_TESTMODE_STA_STATISTICS_RSSI,
++    NL80211_TESTMODE_STA_STATISTICS_PHY_MODE,
++    NL80211_TESTMODE_STA_STATISTICS_TX_RATE,
++
++    NL80211_TESTMODE_STA_STATISTICS_TOTAL_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_THRESHOLD_CNT,
++
++    NL80211_TESTMODE_STA_STATISTICS_AVG_PROCESS_TIME,
++    NL80211_TESTMODE_STA_STATISTICS_MAX_PROCESS_TIME,
++    NL80211_TESTMODE_STA_STATISTICS_AVG_HIF_PROCESS_TIME,
++    NL80211_TESTMODE_STA_STATISTICS_MAX_HIF_PROCESS_TIME,
++
++
++    NL80211_TESTMODE_STA_STATISTICS_FAIL_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_TIMEOUT_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_AVG_AIR_TIME,
++
++    NL80211_TESTMODE_STA_STATISTICS_TC_EMPTY_CNT_ARRAY,
++    NL80211_TESTMODE_STA_STATISTICS_TC_QUE_LEN_ARRAY,
++
++    NL80211_TESTMODE_STA_STATISTICS_TC_AVG_QUE_LEN_ARRAY,
++    NL80211_TESTMODE_STA_STATISTICS_TC_CUR_QUE_LEN_ARRAY,
++
++    /*
++     * how many packages TX during statistics interval
++     */
++    NL80211_TESTMODE_STA_STATISTICS_ENQUEUE,
++
++    /*
++     * how many packages TX during statistics interval
++     */
++    NL80211_TESTMODE_STA_STATISTICS_STA_ENQUEUE,
++
++    /*
++     * how many packages dequeue during statistics interval
++     */
++    NL80211_TESTMODE_STA_STATISTICS_DEQUEUE,
++
++    /*
++     * how many packages dequeue during statistics interval
++     */
++    NL80211_TESTMODE_STA_STATISTICS_STA_DEQUEUE,
++
++    /*
++     * how many TC[0-3] resource back from firmware during
++     * statistics interval
++     */
++    NL80211_TESTMODE_STA_STATISTICS_RB_ARRAY,
++    NL80211_TESTMODE_STA_STATISTICS_NO_TC_ARRAY,
++    NL80211_TESTMODE_STA_STATISTICS_TC_USED_ARRAY,
++    NL80211_TESTMODE_STA_STATISTICS_TC_WANTED_ARRAY,
++
++    NL80211_TESTMODE_STA_STATISTICS_IRQ_ISR_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_IRQ_ISR_PASS_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_IRQ_TASK_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_IRQ_AB_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_IRQ_SW_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_IRQ_TX_CNT,
++    NL80211_TESTMODE_STA_STATISTICS_IRQ_RX_CNT,
++
++    NL80211_TESTMODE_STA_STATISTICS_RESERVED_ARRAY,
++
++    NL80211_TESTMODE_STA_STATISTICS_NUM,
++    NL80211_TESTMODE_STA_STATISTICS_MAX = NL80211_TESTMODE_STA_STATISTICS_NUM - 1
++};
++
++enum nl80211_testmode_link_detect_attr{
++    NL80211_TESTMODE_LINK_INVALID = 0,
++    NL80211_TESTMODE_LINK_TX_FAIL_CNT,
++    NL80211_TESTMODE_LINK_TX_RETRY_CNT,
++    NL80211_TESTMODE_LINK_TX_MULTI_RETRY_CNT,
++    NL80211_TESTMODE_LINK_ACK_FAIL_CNT,
++    NL80211_TESTMODE_LINK_FCS_ERR_CNT,
++    NL80211_TESTMODE_LINK_TX_OK_CNT,
++    NL80211_TESTMODE_LINK_RX_OK_CNT,
++    NL80211_TESTMODE_LINK_RST_REASON,
++    NL80211_TESTMODE_LINK_RST_TIME,
++    NL80211_TESTMODE_LINK_ROAM_FAIL_TIMES,
++    NL80211_TESTMODE_LINK_ROAM_FAIL_TIME,
++    NL80211_TESTMODE_LINK_TX_DONE_DELAY_IS_ARP,
++    NL80211_TESTMODE_LINK_ARRIVE_DRV_TICK,
++    NL80211_TESTMODE_LINK_ENQUE_TICK,
++    NL80211_TESTMODE_LINK_DEQUE_TICK,
++    NL80211_TESTMODE_LINK_LEAVE_DRV_TICK,
++    NL80211_TESTMODE_LINK_CURR_TICK,
++    NL80211_TESTMODE_LINK_CURR_TIME,
++    NL80211_TESTMODE_LINK_DETECT_NUM,
++    NL80211_TESTMODE_LINK_DETECT_MAX = NL80211_TESTMODE_LINK_DETECT_NUM - 1
++};
++
++#define BUG_REPORT_NUM    47
++
++enum mtk_nl80211_vendor_subcmd {
++    /* defined in wifi hal */
++    MTK_SUBCMD_TRIGGER_RESET = 1,
++    MTK_SUBCMD_NAN = 12,
++    MTK_SUBCMD_SET_SCAN_PARAM = 13,
++    MTK_SUBCMD_GET_APF_CAPABILITIES = 14,
++    MTK_SUBCMD_SET_PACKET_FILTER = 15,
++    MTK_SUBCMD_READ_PACKET_FILTER = 16,
++    MTK_SUBCMD_GET_TRX_STATS = 48,
++    MTK_SUBCMD_NDP = 81,
++    /* End of defined in wifi hal */
++
++    MTK_SUBCMD_STRING_CMD = 0x2454,
++};
++
++enum mtk_string_attribute {
++    STRING_ATTRIBUTE_INVALID = 0,
++    STRING_ATTRIBUTE_DATA    = 1,
++    STRING_ATTRIBUTE_MAX     = 2
++};
++
++
++typedef enum _ENUM_TRAFFIC_CLASS_INDEX_T {
++    TC0_INDEX = 0,
++    TC1_INDEX,
++    TC2_INDEX,
++    TC3_INDEX,
++    TC_DATA_NUM,
++    TC4_INDEX = TC_DATA_NUM,
++    TC5_INDEX,
++    TC_NUM
++} ENUM_TRAFFIC_CLASS_INDEX_T;
++
++struct wpa_driver_sta_statistics_s {
++    u8      version;
++    u8      addr[ETH_ALEN];
++    u32     flag;
++
++    u32     link_score;
++    u8      per;
++    int     rssi;
++    u32     phy_mode;
++    double  tx_rate;
++
++    u32     tx_total_cnt;
++    u32     enqueue_total_cnt;
++    u32     dequeue_total_cnt;
++    u32     enqueue_sta_total_cnt;
++    u32     dequeue_sta_total_cnt;
++    u32     tx_exc_threshold_cnt;
++
++    u32     tx_avg_process_time;
++    u32     tx_max_process_time;
++    u32     tx_avg_hif_process_time;
++    u32     tx_max_hif_process_time;
++
++    u32     tx_fail_cnt;
++    u32     tx_timeout_cnt;
++    u32     tx_avg_air_time;
++
++    u32     tc_buf_full_cnt[TC_DATA_NUM];
++    u32     tc_que_len[TC_DATA_NUM];
++
++    /*
++     * how many TC[0-3] resource back from firmware during
++     * statistics intervals
++     */
++    u32     tc_back_count[TC_DATA_NUM];
++
++    /*
++     * how many times that no TC[0-3] resource when dequeue
++     * statistics intervals
++     */
++    u32     dequeue_no_tc_res[TC_DATA_NUM];
++    u32     tc_wanted_res[TC_DATA_NUM];
++    u32     tc_used_res[TC_DATA_NUM];
++
++    /*
++     * wlan interrupt info
++     * statistics intervals
++     */
++    u32     isr_cnt;
++    u32     isr_pass_cnt;
++    u32     isr_task_cnt;
++    u32     isr_ab_cnt;
++    u32     isr_sw_cnt;
++    u32     isr_tx_cnt;
++    u32     isr_rx_cnt;
++
++    u32     tc_avg_que_len[TC_DATA_NUM];
++    u32     tc_cur_que_len[TC_DATA_NUM];
++
++    u8      reserved[32];
++};
++
++struct wpa_driver_sta_link_detect_s {
++    u64     tx_fail_cnt;
++    u64     tx_retry_cnt;
++    u64     tx_multi_retry_cnt;
++    u64     ack_fail_cnt;
++    u64     fcs_err_cnt;
++    u64     tx_ok_cnt;
++    u64     rx_ok_cnt;
++    u32     rst_reason;
++    u64     rst_time;
++    u32     roam_fail_times;
++    u64     roam_fail_time;
++    u8      tx_done_delay_is_arp;
++    u32     arrive_drv_tick;
++    u32     en_que_tick;
++    u32     de_que_tick;
++    u32     leave_drv_tick;
++    u32     curr_tick;
++    u64     curr_time;
++    u32     bug_report[BUG_REPORT_NUM];
++};
++
++struct wpa_driver_cmd_reply_s {
++    u32 reply_buf_size;
++    u32 reply_len;
++    union _reply_buf {
++        char *ptr;
++        u64 data;
++    } reply_buf;
++};
++
++/* SIOCSIWENCODEEXT definitions */
++#define IW_ENCODE_ALG_SMS4  0x20
++
++/* P2P Sigma*/
++struct wpa_driver_test_mode_info {
++    u32  index;
++    u32  buflen;
++};
++
++struct wpa_driver_cmd_reply_params {
++    struct wpa_driver_test_mode_info hdr;
++    struct wpa_driver_cmd_reply_s reply_info;
++};
++
++struct wpa_driver_testmode_params {
++    struct wpa_driver_test_mode_info hdr;
++    u8  *buf;
++};
++
++struct wpa_driver_get_sta_statistics_params {
++    struct wpa_driver_test_mode_info hdr;
++    u32 version;
++    u32 flag;
++    u8  addr[ETH_ALEN];
++    u8  *buf;
++};
++
++struct wpa_driver_p2p_sigma_params {
++    struct wpa_driver_test_mode_info hdr;
++    u32 idx;
++    u32 value;
++};
++
++struct wpa_driver_get_sta_link_detect_params {
++    struct wpa_driver_test_mode_info hdr;
++    u8  *buf;
++};
++
++/* Hotspot Client Management */
++struct wpa_driver_hotspot_params {
++    struct wpa_driver_test_mode_info hdr;
++    u8  blocked;
++    u8  bssid[ETH_ALEN];
++};
++
++struct wpa_driver_hotspot_set_config_params {
++    struct wpa_driver_test_mode_info hdr;
++    u32 index;
++    u32 value;
++};
++
++/* SW CMD */
++struct wpa_driver_sw_cmd_params {
++    struct wpa_driver_test_mode_info hdr;
++    u8  set;
++    u32 adr;
++    u32 data;
++};
++
++struct wpa_driver_suspendmode_params {
++    struct wpa_driver_test_mode_info hdr;
++    u8  suspend;
++};
++
++struct wpa_pmkid_entry {
++    u8 bssid[ETH_ALEN];
++    u8 sta[ETH_ALEN];
++    u8 pmkid[PMKID_LEN];
++    u8 addremove; /*1- ADD, 0- Remove*/
++};
++
++struct wpa_driver_pmkid_entry {
++    struct wpa_driver_test_mode_info hdr;
++    u8 bssid[ETH_ALEN];
++    u8 sta[ETH_ALEN];
++    u8 pmkid[PMKID_LEN];
++    u8 addremove; /*1- ADD, 0- Remove*/
++};
++
++/* WAPI */
++struct iw_encode_exts {
++    u32 ext_flags; /* IW_ENCODE_EXT_* */
++    u8  tx_seq[IW_ENCODE_SEQ_MAX_SIZE]; /* LSB first */
++    u8  rx_seq[IW_ENCODE_SEQ_MAX_SIZE]; /* LSB first */
++    u8  addr[ETH_ALEN]; /* ff:ff:ff:ff:ff:ff for broadcast/multicast
++			       * (group) keys or unicast address for
++			       * individual keys */
++    u16 alg; /* IW_ENCODE_ALG_* */
++    u16 key_len;
++    u8  key[32];
++};
++
++struct wpa_driver_rx_filter_params {
++    struct wpa_driver_test_mode_info hdr;
++    u32 Ipv4FilterHigh;
++    u32 Ipv4FilterLow;
++    u32 Ipv6FilterHigh;
++    u32 Ipv6FilterLow;
++    u32 SnapFilterHigh;
++    u32 SnapFilterLow;
++};
++
++struct wpa_driver_wapi_key_params {
++    struct wpa_driver_test_mode_info hdr;
++    u8  key_index;
++    u8  key_len;
++    struct iw_encode_exts extparams;
++};
++
++/* CONFIG_MTK_P2P */
++struct wpa_driver_wfd_data_s {
++    struct wpa_driver_test_mode_info hdr;
++    u32 WfdCmdType;
++    u8  WfdEnable;
++    u8  WfdCoupleSinkStatus;
++    u8  WfdSessionAvailable;
++    u8  WfdSigmaMode;
++    u16 WfdDevInfo;
++    u16 WfdControlPort;
++    u16 WfdMaximumTp;
++    u16 WfdExtendCap;
++    u8  WfdCoupleSinkAddress[ETH_ALEN];
++    u8  WfdAssociatedBssid[ETH_ALEN];
++    u8  WfdVideoIp[4];
++    u8  WfdAudioIp[4];
++    u16 WfdVideoPort;
++    u16 WfdAudioPort;
++    u32 WfdFlag;
++    u32 WfdPolicy;
++    u32 WfdState;
++    u8  WfdSessionInformationIE[24*8];  /* Include Subelement ID, length */
++    u16 WfdSessionInformationIELen;
++    u8  Reverved1[2];
++    u8  WfdPrimarySinkMac[ETH_ALEN];
++    u8  WfdSecondarySinkMac[ETH_ALEN];
++    u32 WfdAdvancedFlag;
++    /* Group 1 64 bytes */
++    u8  WfdLocalIp[4];
++    u16 WfdLifetimeAc2; /* Unit is 2 TU */
++    u16 WfdLifetimeAc3; /* Unit is 2 TU */
++    u16 WfdCounterThreshold;  /* Unit is ms */
++    u8  Reverved2[54];
++    /* Group 2 64 bytes */
++    u8  Reverved3[64];
++    /* Group 3 64 bytes */
++    u8  Reverved4[64];
++} wfd_data;
++
++struct wpa_driver_set_beamplus_params {
++    struct wpa_driver_test_mode_info hdr;
++    u32 value;
++};
++
++enum nl80211_testmode_params {
++    /* Old test mode command id, compatible with exist testmode command */
++    NL80211_TESTMODE_SW_CMD = 1,
++    NL80211_TESTMODE_WAPI = 2,
++    NL80211_TESTMODE_HS20 = 3,
++    NL80211_TESTMODE_POORLINK = 4,
++    NL80211_TESTMODE_STATISTICS = 0x10,
++    NL80211_TESTMODE_LINK_DETECT = 0x20,
++
++    // Hotspot manager testmode command
++    NL80211_TESTMODE_HS_SET_CONFIG = 51,
++
++    /* New test mode command id, should greater than TESTMODE_CMD_ID_NEW_BEGIN */
++    NL80211_TESTMODE_NEW_BEGIN = 100,
++    NL80211_TESTMODE_SUSPEND = 101,
++    NL80211_TESTMODE_STR_CMD = 102,
++    NL80211_TESTMODE_RXFILTER = 103,
++    NL80211_TESTMODE_UPDATE_STA_PMKID = 1000
++};
++
++enum mtk_nl80211_vendor_subcmds {
++    WIFI_EVENT_DRIVER_ERROR = 8,
++    WIFI_EVENT_GENERIC_RESPONSE = 10,
++};
++
++enum mtk_wlan_vendor_attr_driver_error {
++    MTK_WALN_VENDOR_ATTR_DRIVER_ERROR_DATA_STALL_NOTICE = 0,
++    /* keep last */
++    MTK_WALN_VENDOR_ATTR_DRIVER_ERROR_AFTER_LAST,
++    MTK_WALN_VENDOR_ATTR_DRIVER_ERROR_MAX =
++    MTK_WALN_VENDOR_ATTR_DRIVER_ERROR_AFTER_LAST - 1
++};
++
++enum mtk_generic_response_element {
++    MTK_GRID_MANAGE_CHANNEL_LIST,                   /* 0 */
++    MTK_GRID_HANG_INFO,                             /* 1 */
++    MTK_GRID_SWPIS_BCN_INFO,                        /* 2 */
++    MTK_GRID_SWPIS_BCN_INFO_ABORT,                  /* 3 */
++    MTK_GRID_EXTERNAL_AUTH,                         /* 4 */
++};
++
++struct mtk_externa_auth_info {
++    uint8_t ssid[SSID_MAX_LEN + 1];
++    uint8_t ssid_len;
++    uint8_t bssid[ETH_ALEN];
++    uint32_t key_mgmt_suite;
++    uint32_t action;
++    uint8_t dot11MultiLinkActivated;
++    uint8_t own_ml_addr[ETH_ALEN];
++    uint8_t peer_ml_addr[ETH_ALEN];
++} STRUCT_PACKED;
++
++#endif /* MTK_VENDOR_H_ */
+diff --git a/src/common/wpa_common.c b/src/common/wpa_common.c
+index 613ea7f..8e59732 100644
+--- a/src/common/wpa_common.c
++++ b/src/common/wpa_common.c
+@@ -2713,6 +2713,10 @@ const char * wpa_cipher_txt(int cipher)
+ 		return "CCMP+TKIP";
+ 	case WPA_CIPHER_GCMP:
+ 		return "GCMP";
++#if CONFIG_WAPI_SUPPORT
++	case WPA_CIPHER_SMS4:
++		return "SMS4";
++#endif
+ 	case WPA_CIPHER_GCMP_256:
+ 		return "GCMP-256";
+ 	case WPA_CIPHER_CCMP_256:
+@@ -2780,6 +2784,12 @@ const char * wpa_key_mgmt_txt(int key_mgmt, int proto)
+ 		return "FT-SAE";
+ 	case WPA_KEY_MGMT_FT_SAE_EXT_KEY:
+ 		return "FT-SAE-EXT-KEY";
++#if CONFIG_WAPI_SUPPORT
++	case WPA_KEY_MGMT_WAPI_PSK:
++		return "WAPI-PSK";
++	case WPA_KEY_MGMT_WAPI_CERT:
++		return "WAPI-CERT";
++#endif
+ 	case WPA_KEY_MGMT_IEEE8021X_SUITE_B:
+ 		return "WPA2-EAP-SUITE-B";
+ 	case WPA_KEY_MGMT_IEEE8021X_SUITE_B_192:
+diff --git a/src/crypto/tls_openssl.c b/src/crypto/tls_openssl.c
+index 1eb3b91..ab652ad 100644
+--- a/src/crypto/tls_openssl.c
++++ b/src/crypto/tls_openssl.c
+@@ -5784,6 +5784,11 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
+ #endif /* HAVE_OCSP */
+ #endif /* OPENSSL_IS_BORINGSSL */
+ 
++#ifdef CONFIG_MTK_COMMON
++	SSL_set_enforce_rsa_key_usage(conn->ssl, 0);
++	wpa_printf(MSG_DEBUG, "OpenSSL: Disable enforce_rsa_key_usage");
++#endif /* CONFIG_MTK_COMMON */
++
+ 	conn->flags = params->flags;
+ 
+ 	tls_get_errors(data);
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index 0848d16..528e655 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -3386,6 +3386,10 @@ static u32 wpa_cipher_to_cipher_suite(unsigned int cipher)
+ 		return RSN_CIPHER_SUITE_WEP40;
+ 	case WPA_CIPHER_GTK_NOT_USED:
+ 		return RSN_CIPHER_SUITE_NO_GROUP_ADDRESSED;
++#ifdef CONFIG_WAPI_SUPPORT
++	case WPA_CIPHER_SMS4:
++		return RSN_CIPHER_SUITE_TKIP;
++#endif
+ 	default:
+ 		return 0;
+ 	}
+diff --git a/src/drivers/driver_nl80211_capa.c b/src/drivers/driver_nl80211_capa.c
+index 1dbfc22..c2a36ce 100644
+--- a/src/drivers/driver_nl80211_capa.c
++++ b/src/drivers/driver_nl80211_capa.c
+@@ -17,6 +17,7 @@
+ #include "common/qca-vendor.h"
+ #include "common/qca-vendor-attr.h"
+ #include "common/brcm_vendor.h"
++#include "common/mtk_vendor.h"
+ #include "driver_nl80211.h"
+ 
+ static int protocol_feature_handler(struct nl_msg *msg, void *arg)
+@@ -251,6 +252,9 @@ static void wiphy_info_supp_cmds(struct wiphy_info_data *info,
+ 			break;
+ 		}
+ 	}
++#ifdef CONFIG_MTK_COMMON
++	info->update_ft_ies_supported = 1;
++#endif /* CONFIG_MTK_COMMON */
+ }
+ 
+ 
+@@ -1509,6 +1513,10 @@ int wpa_driver_nl80211_capa(struct wpa_driver_nl80211_data *drv)
+ 			WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B |
+ 			WPA_DRIVER_CAPA_KEY_MGMT_OWE |
+ 			WPA_DRIVER_CAPA_KEY_MGMT_DPP;
++#ifdef CONFIG_MTK_COMMON
++		drv->capa.key_mgmt |=
++			WPA_DRIVER_CAPA_KEY_MGMT_SAE_EXT_KEY;
++#endif /* CONFIG_MTK_COMMON */
+ 
+ 		if (drv->capa.enc & (WPA_DRIVER_CAPA_ENC_CCMP_256 |
+ 				     WPA_DRIVER_CAPA_ENC_GCMP_256))
+diff --git a/src/drivers/driver_nl80211_event.c b/src/drivers/driver_nl80211_event.c
+index 246d49d..a931773 100644
+--- a/src/drivers/driver_nl80211_event.c
++++ b/src/drivers/driver_nl80211_event.c
+@@ -19,6 +19,9 @@
+ #include "common/ieee802_11_defs.h"
+ #include "common/ieee802_11_common.h"
+ #include "driver_nl80211.h"
++#ifdef CONFIG_MTK_COMMON
++#include "common/mtk_vendor.h"
++#endif
+ 
+ static void
+ nl80211_control_port_frame_tx_status(struct i802_bss *bss,
+@@ -3418,6 +3421,81 @@ static void nl80211_vendor_event_brcm(struct wpa_driver_nl80211_data *drv,
+ 
+ #endif /* CONFIG_DRIVER_NL80211_BRCM || CONFIG_DRIVER_NL80211_SYNA */
+ 
++#ifdef CONFIG_MTK_COMMON
++static void mtk_nl80211_generic_response_event(struct wpa_driver_nl80211_data *drv,
++                u8 *data, size_t data_len)
++{
++    const u8 *end, *pos;
++
++    pos = data;
++    end = data + data_len;
++    while (end - pos >= 2) {
++        u8 id, len;
++
++        id = *pos++;
++        len = *pos++;
++        if (len > end - pos)
++            break;
++
++        switch (id) {
++        /* add cases for different event id here */
++        case MTK_GRID_EXTERNAL_AUTH:
++        {
++             struct mtk_externa_auth_info *info =
++                 (struct mtk_externa_auth_info *) pos;
++             union wpa_event_data event;
++             enum nl80211_external_auth_action act;
++
++             os_memset(&event, 0, sizeof(event));
++             act = info->action;
++             switch (act) {
++             case NL80211_EXTERNAL_AUTH_START:
++                     event.external_auth.action = EXT_AUTH_START;
++                     break;
++             case NL80211_EXTERNAL_AUTH_ABORT:
++                     event.external_auth.action = EXT_AUTH_ABORT;
++                     break;
++             default:
++                     return;
++             }
++
++             event.external_auth.key_mgmt_suite = info->key_mgmt_suite;
++             event.external_auth.ssid_len = info->ssid_len;
++             if (event.external_auth.ssid_len > SSID_MAX_LEN)
++                 return;
++             event.external_auth.ssid = info->ssid;
++             event.external_auth.bssid = info->bssid;
++
++             wpa_printf(MSG_DEBUG,
++                  "nl80211: MLO external auth action: %u, AKM: 0x%x",
++                  event.external_auth.action,
++                  event.external_auth.key_mgmt_suite);
++             wpa_supplicant_event(drv->ctx, EVENT_EXTERNAL_AUTH, &event);
++        }
++             break;
++        default:
++            wpa_printf(MSG_DEBUG, "unknown generic response: %d", id);
++            break;
++        }
++        pos += len;
++    }
++}
++
++static void nl80211_vendor_event_mtk(struct wpa_driver_nl80211_data *drv,
++				      u32 subcmd, u8 *data, size_t len)
++{
++	switch (subcmd) {
++    case WIFI_EVENT_GENERIC_RESPONSE:
++        mtk_nl80211_generic_response_event(drv, data, len);
++        break;
++    default:
++        wpa_printf(MSG_DEBUG,
++            "nl80211: Ignore unsupported mtk vendor event %u", subcmd);
++        break;
++	}
++}
++
++#endif /* CONFIG_MTK_COMMON */
+ 
+ static void nl80211_vendor_event(struct wpa_driver_nl80211_data *drv,
+ 				 struct nlattr **tb)
+@@ -3474,6 +3552,11 @@ static void nl80211_vendor_event(struct wpa_driver_nl80211_data *drv,
+ 		nl80211_vendor_event_brcm(drv, subcmd, data, len);
+ 		break;
+ #endif /* CONFIG_DRIVER_NL80211_BRCM || CONFIG_DRIVER_NL80211_SYNA */
++#ifdef CONFIG_MTK_COMMON
++	case OUI_MTK:
++	    nl80211_vendor_event_mtk(drv, subcmd, data, len);
++	    break;
++#endif /* CONFIG_MTK_COMMON */
+ 	default:
+ 		wpa_printf(MSG_DEBUG, "nl80211: Ignore unsupported vendor event");
+ 		break;
+diff --git a/src/drivers/driver_nl80211_scan.c b/src/drivers/driver_nl80211_scan.c
+index f0313c1..fa7b271 100644
+--- a/src/drivers/driver_nl80211_scan.c
++++ b/src/drivers/driver_nl80211_scan.c
+@@ -420,6 +420,9 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
+ 	if (ret) {
+ 		wpa_printf(MSG_DEBUG, "nl80211: Scan trigger failed: ret=%d "
+ 			   "(%s)", ret, strerror(-ret));
++#ifdef CONFIG_MTK_HOSTAPD_COMMON
++		goto fail;
++#else
+ 		if (drv->hostapd && is_ap_interface(drv->nlmode)) {
+ #ifdef CONFIG_IEEE80211BE
+ 			/* For multi link BSS, retry scan if any other links
+@@ -470,6 +473,7 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
+ 			ret = 0;
+ 		} else
+ 			goto fail;
++#endif
+ 	}
+ 
+ 	drv->scan_state = SCAN_REQUESTED;
+diff --git a/src/p2p/p2p_invitation.c b/src/p2p/p2p_invitation.c
+index 6d112ee..ad9a07b 100644
+--- a/src/p2p/p2p_invitation.c
++++ b/src/p2p/p2p_invitation.c
+@@ -356,6 +356,10 @@ struct wpabuf * p2p_process_invitation_req(struct p2p_data *p2p, const u8 *sa,
+ 						  msg.operating_channel[4])) {
+ 				p2p->op_reg_class = msg.operating_channel[3];
+ 				p2p->op_channel = msg.operating_channel[4];
++#ifdef CONFIG_MTK_P2P_CONN
++				if (!go)
++					dev->oper_freq = req_freq;
++#endif
+ 				p2p_dbg(p2p, "Use peer preference op_class %d channel %d",
+ 					p2p->op_reg_class, p2p->op_channel);
+ 			} else {
+diff --git a/src/rsn_supp/pmksa_cache.c b/src/rsn_supp/pmksa_cache.c
+index cb7f7e4..e2d78c5 100644
+--- a/src/rsn_supp/pmksa_cache.c
++++ b/src/rsn_supp/pmksa_cache.c
+@@ -398,7 +398,11 @@ pmksa_cache_add_entry(struct rsn_pmksa_cache *pmksa,
+ 	wpa_sm_add_pmkid(pmksa->sm, entry->network_ctx, entry->aa, entry->pmkid,
+ 			 entry->fils_cache_id_set ? entry->fils_cache_id : NULL,
+ 			 entry->pmk, entry->pmk_len,
++#ifdef CONFIG_MTK_COMMON
++			 entry->expiration,
++#else
+ 			 pmksa->sm->dot11RSNAConfigPMKLifetime,
++#endif
+ 			 pmksa->sm->dot11RSNAConfigPMKReauthThreshold,
+ 			 entry->akmp);
+ 
+diff --git a/wpa_supplicant/Android.bp b/wpa_supplicant/Android.bp
+index cf902a1..c9627d8 100644
+--- a/wpa_supplicant/Android.bp
++++ b/wpa_supplicant/Android.bp
+@@ -902,6 +902,12 @@ wpa_supplicant_cc_defaults_type {
+             "-DCONFIG_BGSCAN_SIMPLE",
+         ],
+         default: [],
++    }) + select(soong_config_variable("wpa_supplicant_8", "board_wlan_mediatek_stability"), {
++        "true": [
++            "-DCONFIG_MTK_COMMON",
++            "-DCONFIG_MTK_P2P_CONN",
++        ],
++        default: [],
+     }),
+     arch: {
+         arm: {
+diff --git a/wpa_supplicant/Android.mk b/wpa_supplicant/Android.mk
+index 205d8b7..75a0ba2 100644
+--- a/wpa_supplicant/Android.mk
++++ b/wpa_supplicant/Android.mk
+@@ -344,6 +344,9 @@ NEED_SHA512=y
+ endif
+ 
+ ifdef CONFIG_WAPI_INTERFACE
++ifeq ($(BOARD_WLAN_DEVICE), MediaTek)
++L_CFLAGS += -DCONFIG_WAPI_SUPPORT
++endif
+ L_CFLAGS += -DCONFIG_WAPI_INTERFACE
+ endif
+ 
+diff --git a/wpa_supplicant/aidl/vendor/sta_network.cpp b/wpa_supplicant/aidl/vendor/sta_network.cpp
+index f373e71..15e8afe 100644
+--- a/wpa_supplicant/aidl/vendor/sta_network.cpp
++++ b/wpa_supplicant/aidl/vendor/sta_network.cpp
+@@ -1452,6 +1452,12 @@ ndk::ScopedAStatus StaNetwork::setWapiCertSuiteInternal(const std::string &suite
+ #ifdef CONFIG_WAPI_INTERFACE
+ 	// Dummy implementation
+ 	dummyWapiCertSuite = suite;
++#ifdef CONFIG_WAPI_SUPPORT
++	struct wpa_ssid *wpa_ssid = retrieveNetworkPtr();
++	if (setStringFieldAndResetState(suite.c_str(), &(wpa_ssid->wapi_cert_alias), "suite")) {
++		return createStatus(SupplicantStatusCode::FAILURE_UNKNOWN);
++	}
++#endif
+ 	return ndk::ScopedAStatus::ok();
+ #else
+ 	return createStatusWithMsg(SupplicantStatusCode::FAILURE_UNKNOWN, "Not implemented");
+diff --git a/wpa_supplicant/config.c b/wpa_supplicant/config.c
+index 47d9e6d..e83abc2 100644
+--- a/wpa_supplicant/config.c
++++ b/wpa_supplicant/config.c
+@@ -693,6 +693,10 @@ static int wpa_config_parse_proto(const struct parse_data *data,
+ 		else if (os_strcmp(start, "RSN") == 0 ||
+ 			 os_strcmp(start, "WPA2") == 0)
+ 			val |= WPA_PROTO_RSN;
++#if CONFIG_WAPI_SUPPORT
++		else if (os_strcmp(start, "WAPI") == 0)
++			val |= WPA_PROTO_WAPI;
++#endif
+ 		else {
+ 			wpa_printf(MSG_ERROR, "Line %d: invalid proto '%s'",
+ 				   line, start);
+@@ -821,6 +825,12 @@ static int wpa_config_parse_key_mgmt(const struct parse_data *data,
+ 		else if (os_strcmp(start, "FT-SAE-EXT-KEY") == 0)
+ 			val |= WPA_KEY_MGMT_FT_SAE_EXT_KEY;
+ #endif /* CONFIG_SAE */
++#if CONFIG_WAPI_SUPPORT
++		else if (os_strcmp(start, "WAPI-PSK") == 0)
++			val |= WPA_KEY_MGMT_WAPI_PSK;
++		else if (os_strcmp(start, "WAPI-CERT") == 0)
++			val |= WPA_KEY_MGMT_WAPI_CERT;
++#endif
+ #ifdef CONFIG_SUITEB
+ 		else if (os_strcmp(start, "WPA-EAP-SUITE-B") == 0)
+ 			val |= WPA_KEY_MGMT_IEEE8021X_SUITE_B;
+@@ -2754,6 +2764,9 @@ static const struct parse_data ssid_fields[] = {
+ 	{ INT_RANGE(owe_ptk_workaround, 0, 1) },
+ 	{ INT_RANGE(multi_ap_backhaul_sta, 0, 1) },
+ 	{ INT_RANGE(ft_eap_pmksa_caching, 0, 1) },
++#if CONFIG_WAPI_SUPPORT
++	{ STR(wapi_cert_alias) },
++#endif
+ 	{ INT_RANGE(multi_ap_profile, MULTI_AP_PROFILE_1,
+ 		    MULTI_AP_PROFILE_MAX) },
+ 	{ INT_RANGE(beacon_prot, 0, 1) },
+diff --git a/wpa_supplicant/config_ssid.h b/wpa_supplicant/config_ssid.h
+index 7d275cd..a4ff05e 100644
+--- a/wpa_supplicant/config_ssid.h
++++ b/wpa_supplicant/config_ssid.h
+@@ -1222,6 +1222,13 @@ struct wpa_ssid {
+ 	 */
+ 	int ft_eap_pmksa_caching;
+ 
++#ifdef CONFIG_WAPI_SUPPORT
++	/** WAPI
++	 * certificate alias for wapi cert mode
++	 */
++	u8 *wapi_cert_alias;
++#endif
++
+ 	/**
+ 	 * multi_ap_profile - Supported Multi-AP profile
+ 	 */
+diff --git a/wpa_supplicant/events.c b/wpa_supplicant/events.c
+index 6808956..a98eae1 100644
+--- a/wpa_supplicant/events.c
++++ b/wpa_supplicant/events.c
+@@ -53,6 +53,9 @@
+ #include "wmm_ac.h"
+ #include "nan_usd.h"
+ #include "dpp_supplicant.h"
++#ifdef CONFIG_WAPI_SUPPORT
++#include "wapi.h"
++#endif
+ #include "rsn_supp/wpa_i.h"
+ 
+ 
+@@ -640,6 +643,11 @@ static int wpa_supplicant_match_privacy(struct wpa_bss *bss,
+ 	if (wpa_key_mgmt_wpa(ssid->key_mgmt))
+ 		privacy = 1;
+ 
++#ifdef CONFIG_WAPI_SUPPORT
++	if (ssid->key_mgmt & (WPA_KEY_MGMT_WAPI_PSK | WPA_KEY_MGMT_WAPI_CERT))
++		privacy = 1;
++#endif
++
+ 	if (bss->caps & IEEE80211_CAP_PRIVACY)
+ 		return privacy;
+ 	return !privacy;
+@@ -1368,6 +1376,10 @@ static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
+ 		if (debug_print)
+ 			wpa_dbg(wpa_s, MSG_DEBUG,
+ 				"   skip - non-WPA network not allowed");
++#ifdef CONFIG_WAPI_SUPPORT
++        ie = wpa_bss_get_ie(bss, WLAN_EID_WAPI);
++        if (ssid->proto != WPA_PROTO_WAPI || !(ie && ie[1]))
++#endif
+ 		return false;
+ 	}
+ 
+@@ -4515,6 +4527,17 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
+ #endif /* CONFIG_SME */
+ 
+ 	wpa_msg(wpa_s, MSG_INFO, "Associated with " MACSTR, MAC2STR(bssid));
++#ifdef CONFIG_WAPI_SUPPORT
++	/**
++	 * migration notice: please pay attention to if there's any changes under these code
++	 * in new wpa_supplicant.
++	 */
++	if (wpa_s->wpa_proto == WPA_PROTO_WAPI) {
++		wapi_event_assoc(wpa_s);
++		return;
++	}
++#endif
++
+ 	if (wpa_s->current_ssid) {
+ 		/* When using scanning (ap_scan=1), SIM PC/SC interface can be
+ 		 * initialized before association, but for other modes,
+@@ -4886,6 +4909,12 @@ static void wpa_supplicant_event_disassoc_finish(struct wpa_supplicant *wpa_s,
+ 		bssid = wpa_s->pending_bssid;
+ 	if (wpa_s->wpa_state >= WPA_AUTHENTICATING)
+ 		wpas_connection_failed(wpa_s, bssid, NULL);
++
++#ifdef CONFIG_WAPI_SUPPORT
++	if (wpa_s->wpa_proto == WPA_PROTO_WAPI) {
++		wapi_event_disassoc(wpa_s, bssid);
++	} else
++#endif
+ 	wpa_sm_notify_disassoc(wpa_s->wpa);
+ 	ptksa_cache_flush(wpa_s->ptksa, wpa_s->bssid, WPA_CIPHER_NONE);
+ 
+@@ -4897,6 +4926,9 @@ static void wpa_supplicant_event_disassoc_finish(struct wpa_supplicant *wpa_s,
+ #ifdef CONFIG_DPP2
+ 	wpas_dpp_send_conn_status_result(wpa_s, DPP_STATUS_AUTH_FAILURE);
+ #endif /* CONFIG_DPP2 */
++#ifdef CONFIG_WAPI_SUPPORT /* clear keys only if we're not using wapi */
++	if (wpa_s->wpa_proto != WPA_PROTO_WAPI)
++#endif
+ 	if (wpa_supplicant_dynamic_keys(wpa_s)) {
+ 		wpa_dbg(wpa_s, MSG_DEBUG, "Disconnect event - remove keys");
+ 		wpa_clear_keys(wpa_s, wpa_s->bssid);
+diff --git a/wpa_supplicant/sme.c b/wpa_supplicant/sme.c
+index c6b4242..3dc2910 100644
+--- a/wpa_supplicant/sme.c
++++ b/wpa_supplicant/sme.c
+@@ -40,6 +40,9 @@ static void sme_auth_timer(void *eloop_ctx, void *timeout_ctx);
+ static void sme_assoc_timer(void *eloop_ctx, void *timeout_ctx);
+ static void sme_obss_scan_timeout(void *eloop_ctx, void *timeout_ctx);
+ static void sme_stop_sa_query(struct wpa_supplicant *wpa_s);
++#ifdef CONFIG_MTK_COMMON
++static int sme_sae_set_pmk(struct wpa_supplicant *wpa_s, const u8 *bssid);
++#endif /* CONFIG_MTK_COMMON */
+ 
+ 
+ #ifdef CONFIG_SAE
+@@ -1497,10 +1500,15 @@ static bool is_sae_key_mgmt_suite(struct wpa_supplicant *wpa_s, u32 suite)
+ 	 * match that initial implementation so that already deployed use cases
+ 	 * remain functional. */
+ 	if (RSN_SELECTOR_GET(&suite) == RSN_AUTH_KEY_MGMT_SAE) {
++#ifdef CONFIG_MTK_COMMON
++		/* SAE AKM only for SAE connection excluding FT-SAE */
++		wpa_s->sme.ext_auth_key_mgmt = WPA_KEY_MGMT_SAE;
++#else /* CONFIG_MTK_COMMON */
+ 		/* Old drivers which follow initial implementation send SAE AKM
+ 		 * for both SAE and FT-SAE connections. In that case, determine
+ 		 * the actual AKM from wpa_s->key_mgmt. */
+ 		wpa_s->sme.ext_auth_key_mgmt = wpa_s->key_mgmt;
++#endif /* CONFIG_MTK_COMMON */
+ 		return true;
+ 	}
+ 
+@@ -1912,6 +1920,14 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
+ 		sae_clear_temp_data(&wpa_s->sme.sae);
+ 		wpa_s_clear_sae_rejected(wpa_s);
+ 
++#ifdef CONFIG_MTK_COMMON
++		if (sme_sae_set_pmk(wpa_s,
++				    wpa_s->sme.ext_ml_auth ?
++				    wpa_s->sme.ext_auth_ap_mld_addr :
++				    wpa_s->sme.ext_auth_bssid) < 0)
++			return -1;
++#endif /* CONFIG_MTK_COMMON */
++
+ 		if (external) {
+ 			/* Report success to driver */
+ 			sme_send_external_auth_status(wpa_s,
+@@ -1993,11 +2009,13 @@ void sme_external_auth_mgmt_rx(struct wpa_supplicant *wpa_s,
+ 		if (res != 1)
+ 			return;
+ 
++#ifndef CONFIG_MTK_COMMON
+ 		if (sme_sae_set_pmk(wpa_s,
+ 				    wpa_s->sme.ext_ml_auth ?
+ 				    wpa_s->sme.ext_auth_ap_mld_addr :
+ 				    wpa_s->sme.ext_auth_bssid) < 0)
+ 			return;
++#endif /* CONFIG_MTK_COMMON */
+ 	}
+ }
+ 
+diff --git a/wpa_supplicant/wpa_supplicant.c b/wpa_supplicant/wpa_supplicant.c
+index b8c6f55..7f26c19 100644
+--- a/wpa_supplicant/wpa_supplicant.c
++++ b/wpa_supplicant/wpa_supplicant.c
+@@ -70,6 +70,9 @@
+ #include "ap/ap_config.h"
+ #include "ap/hostapd.h"
+ #endif /* CONFIG_MESH */
++#ifdef CONFIG_WAPI_SUPPORT
++#include "wapi.h"
++#endif
+ #include "aidl/vendor/aidl.h"
+ 
+ const char *const wpa_supplicant_version =
+@@ -694,6 +697,11 @@ static void wpa_supplicant_cleanup(struct wpa_supplicant *wpa_s)
+ 	pmksa_candidate_free(wpa_s->wpa);
+ 	ptksa_cache_deinit(wpa_s->ptksa);
+ 	wpa_s->ptksa = NULL;
++
++#if CONFIG_WAPI_SUPPORT
++	wapi_deinit(wpa_s);
++#endif
++
+ 	wpa_sm_deinit(wpa_s->wpa);
+ 	wpa_s->wpa = NULL;
+ 	wpa_bssid_ignore_clear(wpa_s);
+@@ -1771,6 +1779,15 @@ static void wpas_update_allowed_key_mgmt(struct wpa_supplicant *wpa_s,
+ 		return;
+ 	}
+ 
++#ifdef CONFIG_MTK_COMMON
++	if (ssid->group_mgmt_cipher &
++	    (WPA_CIPHER_AES_128_CMAC | WPA_CIPHER_BIP_GMAC_256)) {
++		ssid->group_mgmt_cipher |=
++		(WPA_CIPHER_AES_128_CMAC | WPA_CIPHER_BIP_GMAC_256);
++		wpa_dbg(wpa_s, MSG_DEBUG, "RSN: enable AES_128_CMAC | BIP_GMAC_256");
++	}
++#endif /* CONFIG_MTK_COMMON */
++
+ #ifdef CONFIG_SAE
+ 	sae_pwe = wpas_get_ssid_sae_pwe(wpa_s, ssid);
+ 	if (sae_pwe != SAE_PWE_HUNT_AND_PECK &&
+@@ -2180,9 +2197,11 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
+ #endif /* CONFIG_SAE */
+ 	if (bss && is_6ghz_freq(bss->freq) &&
+ 	    wpas_get_ssid_pmf(wpa_s, ssid) != MGMT_FRAME_PROTECTION_REQUIRED) {
++#ifndef CONFIG_MTK_COMMON
+ 		wpa_dbg(wpa_s, MSG_DEBUG, "RSN: Force MFPR=1 on 6 GHz");
+ 		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_MFP,
+ 				 MGMT_FRAME_PROTECTION_REQUIRED);
++#endif /* CONFIG_MTK_COMMON */
+ 	}
+ #ifdef CONFIG_TESTING_OPTIONS
+ 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_FT_RSNXE_USED,
+@@ -3756,6 +3775,15 @@ static u8 * wpas_populate_assoc_ies(
+ 			params->wps = WPS_MODE_OPEN;
+ 		wpa_s->wpa_proto = 0;
+ #endif /* CONFIG_WPS */
++#ifdef CONFIG_WAPI_SUPPORT
++	} else if (ssid->key_mgmt & (WPA_KEY_MGMT_WAPI_CERT | WPA_KEY_MGMT_WAPI_PSK)) {
++		if (wapi_set_suites(wpa_s, ssid, bss, wpa_ie, &wpa_ie_len) < 0) {
++			wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed to set WAPI "
++				"key management and encryption suites");
++			wpas_connect_work_done(wpa_s);
++			return NULL;
++		}
++#endif
+ 	} else {
+ 		wpa_supplicant_set_non_wpa_policy(wpa_s, ssid);
+ 		wpa_ie_len = 0;
+@@ -4418,6 +4446,9 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
+        struct ieee80211_vht_capabilities vhtcaps;
+        struct ieee80211_vht_capabilities vhtcaps_mask;
+ #endif /* CONFIG_VHT_OVERRIDES */
++#ifdef CONFIG_MTK_COMMON
++	const u8 *mdie;
++#endif /* CONFIG_MTK_COMMON */
+ 
+ 	wpa_s->roam_in_progress = false;
+ #ifdef CONFIG_WNM
+@@ -4526,7 +4557,13 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
+ 
+ 	wpa_supplicant_cancel_scan(wpa_s);
+ 
+-	wpa_clear_keys(wpa_s, bss ? bss->bssid : NULL);
++#ifdef CONFIG_MTK_COMMON
++	if (wpa_s->wpa_state == WPA_COMPLETED)
++		wpa_printf(MSG_INFO, "Don't clear key while in a connected state");
++	else
++#endif /* CONFIG_MTK_COMMON */
++		wpa_clear_keys(wpa_s, bss ? bss->bssid : NULL);
++
+ 	use_crypt = 1;
+ 	cipher_pairwise = wpa_s->pairwise_cipher;
+ 	cipher_group = wpa_s->group_cipher;
+@@ -4787,6 +4824,12 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
+ 				"MFP: require MFP");
+ 			params.mgmt_frame_protection =
+ 				MGMT_FRAME_PROTECTION_REQUIRED;
++#ifndef CONFIG_MTK_COMMON
++			wpa_dbg(wpa_s, MSG_DEBUG, "WPA: Selected AP supports "
++				"MFP: require MFP");
++			params.mgmt_frame_protection =
++				MGMT_FRAME_PROTECTION_REQUIRED;
++#endif /* CONFIG_MTK_COMMON */
+ #ifdef CONFIG_OWE
+ 		} else if (!rsn && (ssid->key_mgmt & WPA_KEY_MGMT_OWE) &&
+ 			   !ssid->owe_only) {
+@@ -4906,6 +4949,16 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
+ 			/* give IBSS a bit more time */
+ 			timeout = ssid->mode == WPAS_MODE_IBSS ? 20 : 10;
+ 		}
++#ifdef CONFIG_WAPI_SUPPORT
++		if (wpa_s->wpa_proto == WPA_PROTO_WAPI) {
++			wpa_s->current_ssid = ssid;
++			wpa_printf(MSG_DEBUG,
++				"[WAPI] set WAPI Auth Time in 35 secs"
++				" and not to initiate eapol\n");
++			wpa_supplicant_req_auth_timeout(wpa_s, 35, 0);
++			return;
++		}
++#endif
+ 		wpa_supplicant_req_auth_timeout(wpa_s, timeout, 0);
+ 	}
+ 
+-- 
+2.34.1
+
