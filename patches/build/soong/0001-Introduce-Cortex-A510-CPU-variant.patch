@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jake Weinstein <jake@aospa.co>
+Date: Sun, 27 Feb 2022 06:36:19 +0000
+Subject: [PATCH] Introduce Cortex-A510 CPU variant
+
+Test: llvm-objdump -d
+Change-Id: Ifb97ab84b441598feeb75860ac3265d79257714d
+---
+ android/arch_list.go      | 1 +
+ cc/config/arm64_device.go | 5 +++++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/android/arch_list.go b/android/arch_list.go
+index 8659549..5e1d106 100644
+--- a/android/arch_list.go
++++ b/android/arch_list.go
+@@ -97,6 +97,7 @@ var cpuVariants = map[ArchType][]string{
+ 		"exynos-m2",
+ 	},
+ 	Arm64: {
++		"cortex-a510",
+ 		"cortex-a53",
+ 		"cortex-a55",
+ 		"cortex-a72",
+diff --git a/cc/config/arm64_device.go b/cc/config/arm64_device.go
+index 25edb79..7642b40 100644
+--- a/cc/config/arm64_device.go
++++ b/cc/config/arm64_device.go
+@@ -75,6 +75,9 @@ var (
+ 	arm64Cppflags = []string{}
+ 
+ 	arm64CpuVariantCflags = map[string][]string{
++		"cortex-a510": []string{
++			"-mcpu=cortex-a510",
++		},
+ 		"cortex-a53": []string{
+ 			"-mcpu=cortex-a53",
+ 		},
+@@ -132,6 +135,7 @@ func init() {
+ 		pctx.StaticVariable("Arm64"+variant+"VariantCflags", strings.Join(cflags, " "))
+ 	}
+ 
++	pctx.StaticVariable("Arm64CortexA510Cflags", strings.Join(arm64CpuVariantCflags["cortex-a510"], " "))
+ 	pctx.StaticVariable("Arm64CortexA53Cflags", strings.Join(arm64CpuVariantCflags["cortex-a53"], " "))
+ 	pctx.StaticVariable("Arm64CortexA55Cflags", strings.Join(arm64CpuVariantCflags["cortex-a55"], " "))
+ 	pctx.StaticVariable("Arm64KryoCflags", strings.Join(arm64CpuVariantCflags["kryo"], " "))
+@@ -143,6 +147,7 @@ func init() {
+ 
+ var (
+ 	arm64CpuVariantCflagsVar = map[string]string{
++		"cortex-a510": "${config.Arm64CortexA510Cflags}",
+ 		"cortex-a53": "${config.Arm64CortexA53Cflags}",
+ 		"cortex-a55": "${config.Arm64CortexA55Cflags}",
+ 		"cortex-a72": "${config.Arm64CortexA53Cflags}",
