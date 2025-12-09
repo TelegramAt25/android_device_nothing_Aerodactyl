@@ -254,6 +254,7 @@ PRODUCT_BOOT_JARS += \
 $(call inherit-product, hardware/mediatek/overlay/mssi.mk)
 
 PRODUCT_PACKAGES += \
+    NothingApertureResTarget \
     NothingCarrierConfigResTarget \
     NothingFrameworksResTarget \
     NothingLauncher3ResTarget \
