@@ -237,6 +237,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     NcmTetheringOverlay
 
+PRODUCT_PACKAGES += \
+    MikuApertureResTarget
+
 # Page size
 PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true
 
