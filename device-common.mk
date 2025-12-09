@@ -261,6 +261,7 @@ $(call inherit-product, hardware/nothing/nt-fwk/nt-fwk.mk)
 $(call inherit-product, hardware/mediatek/overlay/mssi.mk)
 
 PRODUCT_PACKAGES += \
+    NothingApertureResTarget \
     NothingCarrierConfigResTarget \
     NothingFrameworksResTarget \
     NothingLauncher3ResTarget \
