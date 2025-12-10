@@ -168,6 +168,9 @@ PRODUCT_PACKAGES += \
     android.hardware.health-service.mediatek \
     android.hardware.health-service.mediatek-recovery
 
+PRODUCT_PACKAGES += \
+    charger_res_images_vendor
+
 # Init
 PRODUCT_PACKAGES += \
     init.ethtooloffloading.rc \
