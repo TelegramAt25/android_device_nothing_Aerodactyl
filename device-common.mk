@@ -230,6 +230,7 @@ PRODUCT_PACKAGES += \
     NothingNfcResTarget \
     NothingPowerOffAlarmResTarget \
     NothingSettingsResTarget \
+    NothingSettingsProviderResTarget \
     NothingSystemUIResTarget \
     NothingTelephonyResTarget \
     NothingWifiResTarget
