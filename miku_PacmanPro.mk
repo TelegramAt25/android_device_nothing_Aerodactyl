@@ -19,6 +19,9 @@ MIKU_MASTER := fukiame
 TARGET_SHIP_FOSSBROWSER := true
 TARGET_SHIP_GLIMPSE := true
 
+# local patch - nuke audiofx
+NUKE_AUDIOFX := true
+
 PRODUCT_BRAND := Nothing
 PRODUCT_DEVICE := PacmanPro
 PRODUCT_MANUFACTURER := Nothing
