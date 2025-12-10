@@ -26,7 +26,7 @@ PRODUCT_BRAND := Nothing
 PRODUCT_DEVICE := PacmanPro
 PRODUCT_MANUFACTURER := Nothing
 PRODUCT_MODEL := A142P
-PRODUCT_NAME := lineage_PacmanPro
+PRODUCT_NAME := miku_PacmanPro
 
 PRODUCT_GMS_CLIENTID_BASE := android-nothing
 
