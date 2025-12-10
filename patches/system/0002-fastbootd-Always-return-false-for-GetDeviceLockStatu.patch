@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mashopy <eliasgheeraert@gmail.com>
+Date: Sat, 23 Aug 2025 07:15:29 +0200
+Subject: [PATCH 2/2] fastbootd: Always return false for GetDeviceLockStatus()
+
+fenrir lks can still flash stuff through bootloader and fastboot
+
+Change-Id: Ica59dab533555af1d12c62b9cc71de55d5b51146
+---
+ fastboot/device/utility.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fastboot/device/utility.cpp b/fastboot/device/utility.cpp
+index e12ee64..0652d93 100644
+--- a/fastboot/device/utility.cpp
++++ b/fastboot/device/utility.cpp
+@@ -195,7 +195,7 @@ std::vector<std::string> ListPartitions(FastbootDevice* device) {
+ }
+ 
+ bool GetDeviceLockStatus() {
+-    return android::base::GetProperty("ro.boot.verifiedbootstate", "") != "orange";
++    return false;
+ }
+ 
+ bool UpdateAllPartitionMetadata(FastbootDevice* device, const std::string& super_name,

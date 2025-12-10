@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mashopy <eliasgheeraert@gmail.com>
+Date: Wed, 20 Aug 2025 06:23:06 +0200
+Subject: [PATCH 1/2] libfs_avb: Allow LKs patched with fenrir to boot on AOSP
+
+fenrir spoof bootloader state to green, however in doing so it result in AVB failures.
+
+Change-Id: I75b28942684c736492ee2a605f3f137dd0d89b2e
+---
+ fs_mgr/libfs_avb/util.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs_mgr/libfs_avb/util.cpp b/fs_mgr/libfs_avb/util.cpp
+index 79c7b94..f78e89c 100644
+--- a/fs_mgr/libfs_avb/util.cpp
++++ b/fs_mgr/libfs_avb/util.cpp
+@@ -111,7 +111,7 @@ bool IsDeviceUnlocked() {
+     std::string verified_boot_state;
+ 
+     if (fs_mgr_get_boot_config("verifiedbootstate", &verified_boot_state)) {
+-        return verified_boot_state == "orange";
++        return (verified_boot_state == "orange" || verified_boot_state == "green");
+     }
+     return false;
+ }
