@@ -239,3 +239,5 @@ PRODUCT_VENDOR_PROPERTIES += \
     persist.log.tag.PhoneConfigurationSettings=$(VENDOR_LOG_LEVEL) \
     persist.log.tag.HWUI=$(VENDOR_LOG_LEVEL) \
     persist.log.tag.hwcomposer=$(VENDOR_LOG_LEVEL) \
+    persist.log.tag.AudioALSAPlaybackHandlerBase=$(VENDOR_LOG_LEVEL) \
+    persist.log.tag.AudioALSAPlaybackHandlerUsb=$(VENDOR_LOG_LEVEL) \
