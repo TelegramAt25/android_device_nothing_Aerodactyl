@@ -8,7 +8,6 @@ dbgtop-drm.ko
 irq-dbg.ko
 mtk_sync.ko
 mtk_disp_notify.ko
-mtk_printk_ctrl.ko
 log_store.ko
 nvmem_mtk-devinfo.ko
 mtk_wdt.ko
@@ -106,7 +105,6 @@ rpmb.ko
 rpmb-mtk.ko
 ufs-mediatek-mod.ko
 ufs-mediatek-dbg.ko
-blocktag.ko
 pidmap.ko
 mtk-pmic-keys.ko
 mtk-kpd.ko
