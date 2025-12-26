@@ -8,7 +8,7 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 
 # A/B
-ifeq ($(WITH_GMS),true)
+ifeq ($(MIKU_GAPPS),true)
 PRODUCT_SYSTEM_PARTITIONS_FILE_SYSTEM_TYPE ?= erofs
 else
 PRODUCT_SYSTEM_PARTITIONS_FILE_SYSTEM_TYPE ?= ext4
