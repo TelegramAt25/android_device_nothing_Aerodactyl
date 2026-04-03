@@ -317,7 +317,7 @@ include $(LOCAL_PATH)/vendor_logtag.mk
 # Radio
 ENABLE_VENDOR_RIL_SERVICE := true
 
-$(call inherit-product, hardware/lineage/compat/frameworks/compat.mk)
+$(call inherit-product, hardware/miku/compat/frameworks/compat.mk)
 $(call inherit-product, hardware/mediatek/frameworks/mediatek-frameworks.mk)
 
 PRODUCT_COPY_FILES += \
