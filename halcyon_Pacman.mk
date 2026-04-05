@@ -6,14 +6,14 @@
 # Inherit from the custom device configuration.
 $(call inherit-product, device/nothing/Aerodactyl/device-Pacman.mk)
 
-# Inherit from the LineageOS configuration.
-$(call inherit-product, vendor/lineage/config/common_full_phone.mk)
+# Inherit from the Halcyon configuration.
+$(call inherit-product, vendor/halcyon/config/common.mk)
 
 PRODUCT_BRAND := Nothing
 PRODUCT_DEVICE := Pacman
 PRODUCT_MANUFACTURER := Nothing
 PRODUCT_MODEL := A142
-PRODUCT_NAME := lineage_Pacman
+PRODUCT_NAME := halcyon_Pacman
 
 PRODUCT_GMS_CLIENTID_BASE := android-nothing
 
