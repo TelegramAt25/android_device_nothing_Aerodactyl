@@ -286,7 +286,8 @@ PRODUCT_PACKAGES += \
     libpowerhalwrap_vendor
 
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/power/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
+    $(LOCAL_PATH)/configs/power/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json \
+    $(LOCAL_PATH)/configs/power/powerhint-Pro.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint-Pro.json
 
 # Power Off Alarm
 PRODUCT_PACKAGES += \
