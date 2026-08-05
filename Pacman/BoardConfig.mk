@@ -6,6 +6,9 @@
 # Include the common BoardConfig.
 include device/nothing/Aerodactyl/BoardConfig-common.mk
 
+# Board info
+TARGET_BOARD_INFO_FILE := $(DEVICE_PATH)/Pacman/board-info.txt
+
 # Bootloader
 TARGET_BOOTLOADER_BOARD_NAME := Pacman
 
