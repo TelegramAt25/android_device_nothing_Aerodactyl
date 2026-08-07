@@ -177,3 +177,4 @@ mtk-socinfo.ko
 cache-parity.ko
 cfg80211.ko
 mac80211.ko
+nothing_writeback_kmsg.ko
